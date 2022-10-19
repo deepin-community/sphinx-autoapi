@@ -1,0 +1,31 @@
+sphinx-autoapi (1.5.1-2) unstable; urgency=medium
+
+  * Rebuild for dgit
+
+ -- Félix Sipma <felix+debian@gueux.org>  Wed, 21 Oct 2020 12:21:20 +0200
+
+sphinx-autoapi (1.5.1-1) unstable; urgency=medium
+
+  [ Félix Sipma ]
+  * New upstream version 1.5.1 (Closes: #971228)
+
+  [ Ondřej Nový ]
+  * d/control: Update Maintainer field with new Debian Python Team
+    contact address.
+  * d/control: Update Vcs-* fields with new Debian Python Team Salsa
+    layout.
+
+ -- Félix Sipma <felix+debian@gueux.org>  Sat, 10 Oct 2020 11:55:58 +0200
+
+sphinx-autoapi (1.3.0-2) unstable; urgency=medium
+
+  * Team upload.
+  * Rebuild.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 23 Jun 2020 20:32:49 +0200
+
+sphinx-autoapi (1.3.0-1) unstable; urgency=medium
+
+  * Initial release. (Closes: #955819)
+
+ -- Félix Sipma <felix+debian@gueux.org>  Mon, 20 Apr 2020 12:39:16 +0200

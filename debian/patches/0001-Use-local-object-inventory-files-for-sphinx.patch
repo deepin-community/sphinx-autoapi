@@ -1,0 +1,56 @@
+From: =?utf-8?q?F=C3=A9lix_Sipma?= <felix+debian@gueux.org>
+Date: Sun, 19 Apr 2020 16:43:08 +0200
+Subject: Use local object inventory files for sphinx
+
+Use the local object inventory files to prevent sphinx-build from
+downloading them during build.
+This patch makes the intersphinx mappings depend on the existence of
+these files, thus passing Debian Policy 12.3 while still maintaining
+a level of comfort for the reader of the documentation.
+Based on Fladischer Michael <FladischerMichael@fladi.at> patch for
+sphinx-issuetracker
+
+Forwarded: not-needed
+---
+ docs/conf.py | 21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/docs/conf.py b/docs/conf.py
+index 399ca89..fd98e38 100644
+--- a/docs/conf.py
++++ b/docs/conf.py
+@@ -12,6 +12,9 @@
+ # All configuration values have a default; values that are commented out
+ # serve to show the default.
+ 
++import os.path
++import sys
++
+ # -- General configuration ------------------------------------------------
+ 
+ # If your documentation needs a minimal Sphinx version, state it here.
+@@ -26,10 +29,20 @@ autoapi_type = 'python'
+ autoapi_dirs = ['../autoapi']
+ autoapi_generate_api_docs = False
+ 
+-intersphinx_mapping = {
+-    'sphinx': ('https://www.sphinx-doc.org/en/master/', None),
+-    'python': ('https://docs.python.org/3/', None),
+-}
++def check_object_path(key, url, path):
++    if os.path.isfile(path):
++        return {key: (url, path)}
++    return {}
++
++intersphinx_mapping = {}
++intersphinx_mapping.update(check_object_path('python',
++                                             'http://docs.python.org/3/',
++                                             '/usr/share/doc/python3'
++                                             + '.'.join([str(x) for x in sys.version_info[0:2]])
++                                             + '/html/objects.inv'))
++intersphinx_mapping.update(check_object_path('sphinx',
++                                             'https://www.sphinx-doc.org/en/master/',
++                                             '/usr/share/doc/python3-sphinx/html/objects.inv'))
+ 
+ # The suffix(es) of source filenames.
+ # You can specify multiple suffix as a list of string:
