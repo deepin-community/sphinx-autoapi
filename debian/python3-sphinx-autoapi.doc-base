@@ -1,0 +1,10 @@
+Document: python3-sphinx-autoapi
+Title: sphinx-autoapi documentation
+Author: Eric Holscher
+Abstract: Finds and generates documentation by parsing source code.
+Section: Programming
+
+Format: HTML
+Index: /usr/share/doc/python3-sphinx-autoapi/html/index.html
+Files: /usr/share/doc/python3-sphinx-autoapi/html/*.html
+       /usr/share/doc/python3-sphinx-autoapi/html/*/*.html

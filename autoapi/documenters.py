@@ -1,29 +1,21 @@
 import re
 
-import sphinx
 from sphinx.ext import autodoc
 
-from .mappers.python import (
+from ._objects import (
     PythonFunction,
     PythonClass,
     PythonMethod,
+    PythonProperty,
     PythonData,
     PythonAttribute,
     PythonException,
 )
 
-# pylint: disable=attribute-defined-outside-init,no-self-use,unused-argument
-
 
 class AutoapiDocumenter(autodoc.Documenter):
     def get_attr(self, obj, name, *defargs):
-        if hasattr(self.env.app, "registry") and hasattr(
-            self.env.app.registry, "autodoc_attrgettrs"
-        ):
-            attrgetters = self.env.app.registry.autodoc_attrgettrs
-        else:
-            # Needed for Sphinx 1.6
-            attrgetters = getattr(autodoc.AutoDirective, "_special_attrgetters")
+        attrgetters = self.env.app.registry.autodoc_attrgettrs
 
         for type_, func in attrgetters.items():
             if isinstance(obj, type_):
@@ -45,7 +37,7 @@ class AutoapiDocumenter(autodoc.Documenter):
         max_splits = self.fullname.count(".")
         for num_splits in range(max_splits, -1, -1):
             path_stack = list(reversed(self.fullname.rsplit(".", num_splits)))
-            objects = self.env.autoapi_mapper.objects
+            objects = self.env.autoapi_objects
             parent = None
             current = objects.get(path_stack.pop())
             while current and path_stack:
@@ -85,10 +77,10 @@ class AutoapiDocumenter(autodoc.Documenter):
         elif not self.options.inherited_members:
             children = (child for child in children if not child[1].inherited)
 
-        return False, sorted(children)
+        return False, children
 
 
-class _AutoapiDocstringSignatureMixin(object):  # pylint: disable=too-few-public-methods
+class _AutoapiDocstringSignatureMixin:
     def format_signature(self, **kwargs):
         # Set "manual" attributes at the last possible moment.
         # This is to let a manual entry or docstring searching happen first,
@@ -99,7 +91,7 @@ class _AutoapiDocstringSignatureMixin(object):  # pylint: disable=too-few-public
         if self.retann is None:
             self.retann = self.object.return_annotation
 
-        return super(_AutoapiDocstringSignatureMixin, self).format_signature(**kwargs)
+        return super().format_signature(**kwargs)
 
 
 class AutoapiFunctionDocumenter(
@@ -118,43 +110,38 @@ class AutoapiFunctionDocumenter(
         return "(" + self.object.args + ")"
 
     def add_directive_header(self, sig):
-        if sphinx.version_info >= (2, 1):
-            autodoc.Documenter.add_directive_header(self, sig)
+        autodoc.Documenter.add_directive_header(self, sig)
 
-            if "async" in self.object.properties:
-                sourcename = self.get_sourcename()
-                self.add_line("   :async:", sourcename)
-        else:
-            super(AutoapiFunctionDocumenter, self).add_directive_header(sig)
+        if "async" in self.object.properties:
+            sourcename = self.get_sourcename()
+            self.add_line("   :async:", sourcename)
 
 
-if sphinx.version_info >= (2,):
+class AutoapiDecoratorDocumenter(
+    AutoapiFunctionDocumenter, AutoapiDocumenter, autodoc.DecoratorDocumenter
+):
+    objtype = "apidecorator"
+    directivetype = "decorator"
+    priority = autodoc.DecoratorDocumenter.priority * 100 + 100
 
-    class AutoapiDecoratorDocumenter(
-        AutoapiFunctionDocumenter, AutoapiDocumenter, autodoc.DecoratorDocumenter
-    ):
-        objtype = "apidecorator"
-        directivetype = "decorator"
-        priority = autodoc.DecoratorDocumenter.priority * 100 + 100
+    def format_signature(self, **kwargs):
+        if self.args is None:
+            self.args = self.format_args(**kwargs)
 
-        def format_signature(self, **kwargs):
-            if self.args is None:
-                self.args = self.format_args(**kwargs)
+        return super().format_signature(**kwargs)
 
-            return super(AutoapiDecoratorDocumenter, self).format_signature(**kwargs)
+    def format_args(self, **kwargs):
+        to_format = self.object.args
 
-        def format_args(self, **kwargs):
-            to_format = self.object.args
+        if re.match(r"func\W", to_format) or to_format == "func":
+            if "," not in to_format:
+                return None
 
-            if re.match(r"func\W", to_format) or to_format == "func":
-                if "," not in to_format:
-                    return None
+            # We need to do better stripping here.
+            # An annotation with a comma will mess this up.
+            to_format = self.object.args.split(",", 1)[1]
 
-                # We need to do better stripping here.
-                # An annotation with a comma will mess this up.
-                to_format = self.object.args.split(",", 1)[1]
-
-            return "(" + to_format + ")"
+        return "(" + to_format + ")"
 
 
 class AutoapiClassDocumenter(
@@ -177,12 +164,12 @@ class AutoapiClassDocumenter(
 
         if self.options.show_inheritance:
             sourcename = self.get_sourcename()
-            self.add_line(u"", sourcename)
+            self.add_line("", sourcename)
 
             # TODO: Change sphinx to allow overriding of getting base names
             if self.object.bases:
-                bases = [":class:`{}`".format(base) for base in self.object.bases]
-                self.add_line("   " + "Bases: {}".format(", ".join(bases)), sourcename)
+                bases = ", ".join(f":class:`{base}`" for base in self.object.bases)
+                self.add_line(f"   Bases: {bases}", sourcename)
 
 
 class AutoapiMethodDocumenter(
@@ -200,33 +187,55 @@ class AutoapiMethodDocumenter(
         return "(" + self.object.args + ")"
 
     def import_object(self):
-        result = super(AutoapiMethodDocumenter, self).import_object()
+        result = super().import_object()
 
         if result:
             self.parent = self._method_parent
-            if self.object.method_type != "method":
-                if sphinx.version_info < (2, 1):
-                    self.directivetype = self.object.method_type
-                # document class and static members before ordinary ones
+            if "staticmethod" in self.object.properties:
+                # document static members before ordinary ones
+                self.member_order = self.member_order - 2
+            elif "classmethod" in self.object.properties:
+                # document class members before ordinary ones but after static ones
                 self.member_order = self.member_order - 1
 
         return result
 
     def add_directive_header(self, sig):
-        if sphinx.version_info >= (2, 1):
-            autodoc.Documenter.add_directive_header(self, sig)
+        autodoc.Documenter.add_directive_header(self, sig)
 
-            sourcename = self.get_sourcename()
-            for property_type in (
-                "abstractmethod",
-                "async",
-                "classmethod",
-                "staticmethod",
-            ):
-                if property_type in self.object.properties:
-                    self.add_line("   :{}:".format(property_type), sourcename)
-        else:
-            autodoc.Documenter.add_directive_header(self, sig)
+        sourcename = self.get_sourcename()
+        for property_type in (
+            "abstractmethod",
+            "async",
+            "classmethod",
+            "staticmethod",
+        ):
+            if property_type in self.object.properties:
+                self.add_line(f"   :{property_type}:", sourcename)
+
+
+class AutoapiPropertyDocumenter(AutoapiDocumenter, autodoc.PropertyDocumenter):
+    objtype = "apiproperty"
+    directivetype = "property"
+    priority = autodoc.PropertyDocumenter.priority * 100 + 100
+
+    @classmethod
+    def can_document_member(cls, member, membername, isattr, parent):
+        return isinstance(member, PythonProperty)
+
+    def add_directive_header(self, sig):
+        autodoc.ClassLevelDocumenter.add_directive_header(self, sig)
+
+        sourcename = self.get_sourcename()
+        if self.options.annotation and self.options.annotation is not autodoc.SUPPRESS:
+            self.add_line(f"   :type: {self.options.annotation}", sourcename)
+
+        for property_type in (
+            "abstractmethod",
+            "classmethod",
+        ):
+            if property_type in self.object.properties:
+                self.add_line(f"   :{property_type}:", sourcename)
 
 
 class AutoapiDataDocumenter(AutoapiDocumenter, autodoc.DataDocumenter):
@@ -244,13 +253,11 @@ class AutoapiDataDocumenter(AutoapiDocumenter, autodoc.DataDocumenter):
         if not self.options.annotation:
             # TODO: Change sphinx to allow overriding of object description
             if self.object.value is not None:
-                self.add_line(
-                    "   :annotation: = {}".format(self.object.value), sourcename
-                )
+                self.add_line(f"   :annotation: = {self.object.value}", sourcename)
         elif self.options.annotation is autodoc.SUPPRESS:
             pass
         else:
-            self.add_line("   :annotation: %s" % self.options.annotation, sourcename)
+            self.add_line(f"   :annotation: {self.options.annotation}", sourcename)
 
 
 class AutoapiAttributeDocumenter(AutoapiDocumenter, autodoc.AttributeDocumenter):
@@ -269,13 +276,11 @@ class AutoapiAttributeDocumenter(AutoapiDocumenter, autodoc.AttributeDocumenter)
         if not self.options.annotation:
             # TODO: Change sphinx to allow overriding of object description
             if self.object.value is not None:
-                self.add_line(
-                    "   :annotation: = {}".format(self.object.value), sourcename
-                )
+                self.add_line(f"   :annotation: = {self.object.value}", sourcename)
         elif self.options.annotation is autodoc.SUPPRESS:
             pass
         else:
-            self.add_line("   :annotation: %s" % self.options.annotation, sourcename)
+            self.add_line(f"   :annotation: {self.options.annotation}", sourcename)
 
 
 class AutoapiModuleDocumenter(AutoapiDocumenter, autodoc.ModuleDocumenter):

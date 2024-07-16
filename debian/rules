@@ -2,8 +2,9 @@
 export PYBUILD_NAME=sphinx-autoapi
 
 # manually build doc:
-export PYBUILD_AFTER_BUILD=python3 setup.py build_sphinx -b html && \
-        python3 setup.py build_sphinx -b text
+export PYBUILD_AFTER_BUILD=sphinx-build docs build/sphinx/html && \
+        sphinx-build -b text docs build/sphinx/text && \
+        rm -rf build/sphinx/text/.doctrees
 
 # disable test_integration tests:
 # - GoTests.test_integration requires sphinxcontrib.golangdomain (not available
@@ -12,7 +13,7 @@ export PYBUILD_AFTER_BUILD=python3 setup.py build_sphinx -b html && \
 #   available yet in Debian)
 # TODO: package sphinxcontrib.golangdomain and sphinxcontrib.dotnetdomain and
 #       re-enable the tests
-export PYBUILD_TEST_ARGS=-k-test_integration
+export PYBUILD_TEST_ARGS="-k not test_integration"
 
 %:
-	dh $@ --with python3,sphinxdoc --buildsystem=pybuild
+	dh $@ --with sphinxdoc --buildsystem=pybuild

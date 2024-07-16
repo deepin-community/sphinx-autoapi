@@ -10,47 +10,30 @@ a level of comfort for the reader of the documentation.
 Based on Fladischer Michael <FladischerMichael@fladi.at> patch for
 sphinx-issuetracker
 
+Simplified to use plain paths to the packaged docs, not remote resources
+by crusoe
+
+Co-authored-by: Michael R. Crusoe <crusoe@debian.org>
+
 Forwarded: not-needed
 ---
- docs/conf.py | 21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+ docs/conf.py | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/docs/conf.py b/docs/conf.py
-index 399ca89..fd98e38 100644
+index 294c7dd..d315cac 100644
 --- a/docs/conf.py
 +++ b/docs/conf.py
-@@ -12,6 +12,9 @@
- # All configuration values have a default; values that are commented out
- # serve to show the default.
+@@ -47,9 +47,9 @@ autoapi_generate_api_docs = False
+ # -- Options for intersphinx extension ---------------------------------------
  
-+import os.path
-+import sys
-+
- # -- General configuration ------------------------------------------------
- 
- # If your documentation needs a minimal Sphinx version, state it here.
-@@ -26,10 +29,20 @@ autoapi_type = 'python'
- autoapi_dirs = ['../autoapi']
- autoapi_generate_api_docs = False
- 
--intersphinx_mapping = {
+ intersphinx_mapping = {
+-    'jinja': ('https://jinja.palletsprojects.com/en/3.0.x/', None),
 -    'sphinx': ('https://www.sphinx-doc.org/en/master/', None),
 -    'python': ('https://docs.python.org/3/', None),
--}
-+def check_object_path(key, url, path):
-+    if os.path.isfile(path):
-+        return {key: (url, path)}
-+    return {}
-+
-+intersphinx_mapping = {}
-+intersphinx_mapping.update(check_object_path('python',
-+                                             'http://docs.python.org/3/',
-+                                             '/usr/share/doc/python3'
-+                                             + '.'.join([str(x) for x in sys.version_info[0:2]])
-+                                             + '/html/objects.inv'))
-+intersphinx_mapping.update(check_object_path('sphinx',
-+                                             'https://www.sphinx-doc.org/en/master/',
-+                                             '/usr/share/doc/python3-sphinx/html/objects.inv'))
++    'jinja': ('/usr/share/doc/python-jinja2-doc/html', None),
++    'sphinx': ('/usr/share/doc/sphinx-doc/html/', None),
++    'python': ('/usr/share/doc/python3/html', None),
+ }
  
- # The suffix(es) of source filenames.
- # You can specify multiple suffix as a list of string:
+ # -- Enable confval and event roles ------------------------------------------

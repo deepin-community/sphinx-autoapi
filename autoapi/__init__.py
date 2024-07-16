@@ -1,6 +1,7 @@
-"""
-Sphinx AutoAPI
-"""
+"""Sphinx AutoAPI"""
 
 from .extension import setup
-from ._version import __version__, __version_info__
+
+__all__ = ("setup",)
+__version__ = "3.1.2"
+__version_info__ = (3, 1, 2)

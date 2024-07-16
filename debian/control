@@ -3,21 +3,25 @@ Maintainer: Debian Python Team <team+python@tracker.debian.org>
 Uploaders: Félix Sipma <felix+debian@gueux.org>
 Priority: optional
 Section: python
-Build-Depends: debhelper-compat (= 12),
- dh-python,
- sphinx-common,
+Build-Depends: debhelper-compat (= 13),
+ dh-sequence-python3,
  python3-all,
  python3-setuptools,
- python3-astroid,
+ pybuild-plugin-pyproject,
+ python3-astroid (>= 2.7),
+ python3-bs4 <!nocheck>,
+ python3-packaging <!nocheck>,
  python3-jinja2,
  python3-sphinx,
  python3-sphinx-rtd-theme,
- python3-unidecode,
+ python3-sphinx-design,
+ python3-doc <!nodoc>,
+ sphinx-doc <!nodoc>,
+ furo,
  python3-yaml,
- python3-mock,
  python3-pytest
 Rules-Requires-Root: no
-Standards-Version: 4.5.0
+Standards-Version: 4.6.2
 Homepage: https://github.com/readthedocs/sphinx-autoapi
 Vcs-Git: https://salsa.debian.org/python-team/packages/sphinx-autoapi.git
 Vcs-Browser: https://salsa.debian.org/python-team/packages/sphinx-autoapi
@@ -26,6 +30,7 @@ Package: python3-sphinx-autoapi
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}, ${sphinxdoc:Depends}
 Enhances: python3-sphinx
+Suggests: python3-doc, sphinx-doc, python-jinja2-doc
 Description: Automatic doc generation by parsing source code (Sphinx extension)
  Sphinx AutoAPI provides "autodoc" style documentation for multiple
  programming languages without needing to load, run, or import the project
