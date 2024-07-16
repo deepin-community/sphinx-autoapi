@@ -5,7 +5,26 @@ This is a description
 """
 import asyncio
 import typing
-from typing import ClassVar, Dict, Iterable, List, Union, overload
+from typing import ClassVar, Dict, Iterable, Generic, List, TypeVar, Union, overload
+
+from example2 import B
+
+T = TypeVar("T")
+U = TypeVar("U")
+
+software = "sphin'x"
+more_software = 'sphinx"autoapi'
+interesting_string = "interesting\"fun'\\'string"
+
+code_snippet = """The following is some code:
+
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function, unicode_literals
+# from future.builtins.disabled import *
+# from builtins import *
+
+print("chunky o'block")
+"""
 
 max_rating: int = 10
 
@@ -32,18 +51,21 @@ mixed_list: List[Union[str, int]] = [1, "two", 3]
 "This is mixed"
 
 
-def f2(not_yet_a: "A") -> int:
-    ...
+def f2(not_yet_a: "A") -> int: ...
+
+
+def f3(imported: B) -> B: ...
+
+
+class MyGeneric(Generic[T, U]): ...
 
 
 @overload
-def overloaded_func(a: float) -> float:
-    ...
+def overloaded_func(a: float) -> float: ...
 
 
 @typing.overload
-def overloaded_func(a: str) -> str:
-    ...
+def overloaded_func(a: str) -> str: ...
 
 
 def overloaded_func(a: Union[float, str]) -> Union[float, str]:
@@ -52,8 +74,7 @@ def overloaded_func(a: Union[float, str]) -> Union[float, str]:
 
 
 @overload
-def undoc_overloaded_func(a: str) -> str:
-    ...
+def undoc_overloaded_func(a: str) -> str: ...
 
 
 def undoc_overloaded_func(a: str) -> str:
@@ -85,33 +106,28 @@ class A:
         return "method"
 
     @overload
-    def overloaded_method(self, a: float) -> float:
-        ...
+    def overloaded_method(self, a: float) -> float: ...
 
     @typing.overload
-    def overloaded_method(self, a: str) -> str:
-        ...
+    def overloaded_method(self, a: str) -> str: ...
 
     def overloaded_method(self, a: Union[float, str]) -> Union[float, str]:
         """Overloaded method"""
         return a * 2
 
     @overload
-    def undoc_overloaded_method(self, a: float) -> float:
-        ...
+    def undoc_overloaded_method(self, a: float) -> float: ...
 
     def undoc_overloaded_method(self, a: float) -> float:
         return a * 2
 
     @typing.overload
     @classmethod
-    def overloaded_class_method(cls, a: float) -> float:
-        ...
+    def overloaded_class_method(cls, a: float) -> float: ...
 
     @overload
     @classmethod
-    def overloaded_class_method(cls, a: str) -> str:
-        ...
+    def overloaded_class_method(cls, a: str) -> str: ...
 
     @classmethod
     def overloaded_class_method(cls, a: Union[float, str]) -> Union[float, str]:
@@ -119,7 +135,30 @@ class A:
         return a * 2
 
 
-async def async_function(self, wait: bool) -> int:
+class C:
+    @overload
+    def __init__(self, a: int) -> None: ...
+
+    @typing.overload
+    def __init__(self, a: float) -> None: ...
+
+    def __init__(self, a: str): ...
+
+
+class D(C):
+    class Da: ...
+
+    class DB(Da): ...
+
+    ...
+
+
+async def async_function(wait: bool) -> int:
+    """Blah.
+
+    Args:
+        wait: Blah
+    """
     if wait:
         await asyncio.sleep(1)
 
@@ -127,3 +166,6 @@ async def async_function(self, wait: bool) -> int:
 
 
 global_a: A = A()
+
+
+class SomeMetaclass(type): ...

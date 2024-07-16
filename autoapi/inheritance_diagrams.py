@@ -1,12 +1,5 @@
-import sys
-
 import astroid
 import sphinx.ext.inheritance_diagram
-
-if sys.version_info >= (3,):
-    _BUILTINS = "builtins"
-else:
-    _BUILTINS = "__builtins__"
 
 
 def _do_import_class(name, currmodule=None):
@@ -19,7 +12,7 @@ def _do_import_class(name, currmodule=None):
         while target and path_stack:
             path_part = path_stack.pop()
             target = (target.getattr(path_part) or (None,))[0]
-            while isinstance(target, astroid.ImportFrom):
+            while isinstance(target, (astroid.ImportFrom, astroid.Import)):
                 try:
                     target = target.do_import_module(path_part)
                 except astroid.AstroidImportError:
@@ -42,9 +35,7 @@ def _import_class(name, currmodule):
 
     if not target:
         raise sphinx.ext.inheritance_diagram.InheritanceException(
-            "Could not import class or module {} specified for inheritance diagram".format(
-                name
-            )
+            f"Could not import class or module {name} specified for inheritance diagram"
         )
 
     if isinstance(target, astroid.ClassDef):
@@ -58,7 +49,7 @@ def _import_class(name, currmodule):
         return classes
 
     raise sphinx.ext.inheritance_diagram.InheritanceException(
-        "{} specified for inheritance diagram is not a class or module".format(name)
+        f"{name} specified for inheritance diagram is not a class or module"
     )
 
 
@@ -74,13 +65,13 @@ class _AutoapiInheritanceGraph(sphinx.ext.inheritance_diagram.InheritanceGraph):
 
     def _class_info(
         self, classes, show_builtins, private_bases, parts, aliases, top_classes
-    ):  # pylint: disable=too-many-arguments
+    ):
         all_classes = {}
 
         def recurse(cls):
             if cls in all_classes:
                 return
-            if not show_builtins and cls.root().name == _BUILTINS:
+            if not show_builtins and cls.root().name == "builtins":
                 return
             if not private_bases and cls.name.startswith("_"):
                 return
@@ -89,19 +80,19 @@ class _AutoapiInheritanceGraph(sphinx.ext.inheritance_diagram.InheritanceGraph):
             fullname = self.class_name(cls, 0, aliases)
 
             tooltip = None
-            if cls.doc:
-                doc = cls.doc.strip().split("\n")[0]
+            if cls.doc_node:
+                doc = cls.doc_node.value.strip().split("\n")[0]
                 if doc:
                     tooltip = '"%s"' % doc.replace('"', '\\"')
 
             baselist = []
-            all_classes[cls] = (nodename, fullname, baselist, tooltip)
+            all_classes[cls] = (nodename, fullname, baselist, tooltip or "")
 
             if fullname in top_classes:
                 return
 
             for base in cls.ancestors(recurs=False):
-                if not show_builtins and base.root().name == _BUILTINS:
+                if not show_builtins and base.root().name == "builtins":
                     continue
                 if not private_bases and base.name.startswith("_"):
                     continue
@@ -135,6 +126,6 @@ class AutoapiInheritanceDiagram(sphinx.ext.inheritance_diagram.InheritanceDiagra
         old_graph = sphinx.ext.inheritance_diagram.InheritanceGraph
         sphinx.ext.inheritance_diagram.InheritanceGraph = _AutoapiInheritanceGraph
         try:
-            return super(AutoapiInheritanceDiagram, self).run()
+            return super().run()
         finally:
             sphinx.ext.inheritance_diagram.InheritanceGraph = old_graph

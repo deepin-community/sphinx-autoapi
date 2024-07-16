@@ -7,14 +7,9 @@ Welcome to pyexample's documentation!
 =====================================
 
 .. toctree::
+   :glob:
 
-   autoapi/index
-   manualapi
-
-Contents:
-
-.. toctree::
-   :maxdepth: 2
+   *
 
 
 
